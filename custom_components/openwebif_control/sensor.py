@@ -27,6 +27,7 @@ async def async_setup_entry(
             NextProgrammeSensor(coordinator),
             TimerCountSensor(coordinator),
             RecordingCountSensor(coordinator),
+            ChannelsSensor(coordinator),
         ]
     )
 
@@ -127,6 +128,34 @@ class TimerCountSensor(OpenWebifEntity, SensorEntity):
                 }
                 for t in timers[:50]
             ]
+        }
+
+
+class ChannelsSensor(OpenWebifEntity, SensorEntity):
+    """Full list of real channels across all bouquets.
+
+    State is the channel count; the ``channels`` attribute carries the list
+    (name, sref, bouquet) that the Lovelace card renders as a grid. The
+    ``stream_base`` and ``picon_base`` attributes let the card build URLs.
+    """
+
+    _attr_icon = "mdi:television-guide"
+    _attr_translation_key = "channels"
+    _attr_native_unit_of_measurement = "channels"
+
+    def __init__(self, coordinator: OpenWebifCoordinator) -> None:
+        super().__init__(coordinator, "channels")
+
+    @property
+    def native_value(self) -> int:
+        return len(self.coordinator.data.get("channels", []))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "channels": self.coordinator.data.get("channels", []),
+            "stream_base": f"http://{self.coordinator.client.host}:8001/",
+            "picon_base": f"{self.coordinator.client.base_url}/picon/",
         }
 
 

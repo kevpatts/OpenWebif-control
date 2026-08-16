@@ -36,6 +36,8 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entry = entry
         self.about = about
         self._bouquet: str | None = entry.options.get(CONF_BOUQUET)
+        # Channel list changes rarely; fetch once and cache across updates.
+        self._channels: list[dict[str, Any]] | None = None
         super().__init__(
             hass,
             _LOGGER,
@@ -64,11 +66,20 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             timers = await self.client.get_timers()
             movies = await self.client.get_movies()
 
+            # Populate the channel list once (first successful update).
+            if self._channels is None:
+                try:
+                    self._channels = await self.client.get_all_channels()
+                except OpenWebifError as err:
+                    _LOGGER.debug("Channel list fetch failed: %s", err)
+                    self._channels = []
+
             return {
                 "status": status,
                 "epg": epg,
                 "timers": timers,
                 "movies": movies,
+                "channels": self._channels or [],
                 "bouquet": self._bouquet,
             }
         except OpenWebifError as err:

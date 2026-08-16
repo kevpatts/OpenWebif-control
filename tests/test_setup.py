@@ -48,6 +48,21 @@ def _register_mocks(aioclient_mock):
     aioclient_mock.get(f"{BASE}/api/remotecontrol", json={"result": True})
     aioclient_mock.get(f"{BASE}/api/powerstate", json={"result": True, "instandby": False})
     aioclient_mock.get(f"{BASE}/api/timeraddbyeventid", json={"result": True})
+    # getservices is called per-bouquet by get_all_channels(); return a small
+    # channel set regardless of the sRef param.
+    aioclient_mock.get(
+        f"{BASE}/api/getservices",
+        json={
+            "services": [
+                {"servicename": "BBC One HD",
+                 "servicereference": "1:0:19:287B:800:2:11A0000:0:0:0:"},
+                {"servicename": "ITV1 HD",
+                 "servicereference": "1:0:19:515E:842:2:11A0000:0:0:0:"},
+                {"servicename": "<n/a>",
+                 "servicereference": "1:64:0:0:0:0:0:0:0:0::marker"},
+            ]
+        },
+    )
 
 
 async def test_full_setup(hass: HomeAssistant, aioclient_mock):
@@ -95,6 +110,13 @@ async def test_full_setup(hass: HomeAssistant, aioclient_mock):
     rec = next(hass.states.get(e) for e in ents if e.endswith("_recordings"))
     print("[recordings count]", rec.state)
     assert int(rec.state) > 0
+
+    # Channels sensor should exist and have filtered out the marker.
+    chan = next(hass.states.get(e) for e in ents if e.endswith("_channels"))
+    print("[channels count]", chan.state)
+    assert int(chan.state) == 2  # BBC One + ITV1, marker excluded
+    names = [c["name"] for c in chan.attributes["channels"]]
+    assert "<n/a>" not in names
 
     # 5. Services registered
     for svc in ("zap", "send_message", "remote_control", "add_timer",

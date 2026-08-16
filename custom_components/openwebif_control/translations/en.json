@@ -39,7 +39,8 @@
       "current_programme": { "name": "Current programme" },
       "next_programme": { "name": "Next programme" },
       "timer_count": { "name": "Timers" },
-      "recording_count": { "name": "Recordings" }
+      "recording_count": { "name": "Recordings" },
+      "channels": { "name": "Channels" }
     },
     "binary_sensor": {
       "recording": { "name": "Recording" },

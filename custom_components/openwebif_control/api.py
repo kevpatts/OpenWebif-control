@@ -61,6 +61,11 @@ class OpenWebifClient:
         """Return the base URL of the receiver."""
         return self._base
 
+    @property
+    def host(self) -> str:
+        """Return the receiver host (without scheme/port)."""
+        return self._host
+
     def picon_url(self, service_reference: str) -> str:
         """Return the box-served picon URL for a service reference.
 
@@ -129,6 +134,49 @@ class OpenWebifClient:
         """Return the services (channels) within a bouquet."""
         data = await self._get("api/getservices", sRef=bouquet_ref)
         return data.get("services", [])
+
+    @staticmethod
+    def _is_real_channel(service: dict[str, Any]) -> bool:
+        """Filter out markers, placeholders and nested bouquet entries."""
+        ref = service.get("servicereference", "")
+        name = service.get("servicename", "")
+        if ref.startswith("1:64"):  # marker / section header
+            return False
+        if not name or name in ("<n/a>", "N/A"):
+            return False
+        if ":FROM BOUQUET" in ref:  # nested bouquet reference
+            return False
+        return True
+
+    async def get_all_channels(self) -> list[dict[str, Any]]:
+        """Return a de-duplicated list of real channels across all bouquets.
+
+        Each entry: {name, sref, bouquet}. The first bouquet a channel is seen
+        in is recorded as its ``bouquet`` tag (for optional UI filtering).
+        """
+        bouquets = await self.get_bouquets()
+        seen: dict[str, dict[str, Any]] = {}
+        for bouquet in bouquets:
+            bref = bouquet.get("servicereference")
+            bname = bouquet.get("servicename")
+            if not bref:
+                continue
+            try:
+                services = await self.get_services(bref)
+            except OpenWebifError:
+                continue
+            for svc in services:
+                if not self._is_real_channel(svc):
+                    continue
+                sref = svc["servicereference"]
+                if sref in seen:
+                    continue
+                seen[sref] = {
+                    "name": svc["servicename"],
+                    "sref": sref,
+                    "bouquet": bname,
+                }
+        return list(seen.values())
 
     # --- EPG ----------------------------------------------------------------
 
