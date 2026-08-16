@@ -154,6 +154,7 @@ class ChannelsSensor(OpenWebifEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "channels": self.coordinator.data.get("channels", []),
+            "bouquet_refs": self.coordinator.data.get("bouquet_refs", {}),
             "stream_base": f"http://{self.coordinator.client.host}:8001/",
             "picon_base": f"{self.coordinator.client.base_url}/picon/",
         }

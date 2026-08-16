@@ -35,6 +35,9 @@ SERVICE_SEND_MESSAGE = "send_message"
 SERVICE_REMOTE_CONTROL = "remote_control"
 SERVICE_ADD_TIMER = "add_timer"
 SERVICE_TOGGLE_STANDBY = "toggle_standby"
+SERVICE_GET_EPG = "get_epg"
+
+ATTR_BOUQUET_REFERENCE = "bouquet_reference"
 
 ATTR_SERVICE_REFERENCE = "service_reference"
 ATTR_TEXT = "text"

@@ -6,12 +6,18 @@ import logging
 
 import voluptuous as vol
 
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
 from .api import OpenWebifError
 from .const import (
+    ATTR_BOUQUET_REFERENCE,
     ATTR_COMMAND,
     ATTR_EVENT_ID,
     ATTR_MESSAGE_TYPE,
@@ -21,6 +27,7 @@ from .const import (
     DOMAIN,
     MESSAGE_TYPE_MAP,
     SERVICE_ADD_TIMER,
+    SERVICE_GET_EPG,
     SERVICE_REMOTE_CONTROL,
     SERVICE_SEND_MESSAGE,
     SERVICE_TOGGLE_STANDBY,
@@ -58,6 +65,13 @@ TIMER_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_SERVICE_REFERENCE): cv.string,
         vol.Required(ATTR_EVENT_ID): int,
+    }
+)
+
+GET_EPG_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_BOUQUET_REFERENCE): cv.string,
+        vol.Optional("hours", default=24): vol.All(int, vol.Range(min=1, max=168)),
     }
 )
 
@@ -132,6 +146,50 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         DOMAIN, SERVICE_TOGGLE_STANDBY, _toggle_standby, schema=vol.Schema({})
     )
 
+    async def _get_epg(call: ServiceCall) -> ServiceResponse:
+        import time
+
+        coord = _first_coordinator(hass)
+        try:
+            events = await coord.client.get_epg_multi(
+                call.data[ATTR_BOUQUET_REFERENCE]
+            )
+        except OpenWebifError as err:
+            raise HomeAssistantError(f"Get EPG failed: {err}") from err
+        # Window the EPG: keep events overlapping [now, now + hours] so the
+        # grid stays lightweight even for large 7-day bouquets.
+        now = int(time.time())
+        horizon = now + call.data.get("hours", 24) * 3600
+        trimmed = []
+        for e in events:
+            if e.get("title") in (None, "", "N/A"):
+                continue
+            begin = e.get("begin_timestamp") or 0
+            dur = e.get("duration_sec") or 0
+            end = begin + dur
+            if end < now or begin > horizon:
+                continue
+            trimmed.append(
+                {
+                    "sref": e.get("sref"),
+                    "sname": e.get("sname"),
+                    "title": e.get("title"),
+                    "begin": begin,
+                    "duration": dur,
+                    "shortdesc": e.get("shortdesc"),
+                    "id": e.get("id"),
+                }
+            )
+        return {"events": trimmed}
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_EPG,
+        _get_epg,
+        schema=GET_EPG_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
 
 async def async_unload_services(hass: HomeAssistant) -> None:
     """Unregister integration services."""
@@ -141,5 +199,6 @@ async def async_unload_services(hass: HomeAssistant) -> None:
         SERVICE_REMOTE_CONTROL,
         SERVICE_ADD_TIMER,
         SERVICE_TOGGLE_STANDBY,
+        SERVICE_GET_EPG,
     ):
         hass.services.async_remove(DOMAIN, service)

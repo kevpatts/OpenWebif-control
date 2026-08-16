@@ -117,12 +117,38 @@ async def test_full_setup(hass: HomeAssistant, aioclient_mock):
     assert int(chan.state) == 2  # BBC One + ITV1, marker excluded
     names = [c["name"] for c in chan.attributes["channels"]]
     assert "<n/a>" not in names
+    # bouquet_refs map is exposed for the EPG grid service.
+    assert isinstance(chan.attributes.get("bouquet_refs"), dict)
+    print("[bouquet_refs]", len(chan.attributes["bouquet_refs"]), "bouquets")
 
     # 5. Services registered
     for svc in ("zap", "send_message", "remote_control", "add_timer",
-                "toggle_standby"):
+                "toggle_standby", "get_epg"):
         assert hass.services.has_service(DOMAIN, svc), f"missing {svc}"
-    print("[services] all 5 registered")
+    print("[services] all 6 registered")
+
+    # get_epg returns response data from epgmulti (use a now-relative time so
+    # the service's time-window keeps the real event and drops the N/A one).
+    import time as _time
+    _now = int(_time.time())
+    aioclient_mock.get(
+        f"{BASE}/api/epgmulti",
+        json={"events": [
+            {"sref": "1:0:19:287B:800:2:11A0000:0:0:0:", "sname": "BBC One HD",
+             "title": "News", "begin_timestamp": _now,
+             "duration_sec": 1800, "shortdesc": "x", "id": 1},
+            {"sref": "x", "sname": "x", "title": "N/A",
+             "begin_timestamp": 0, "duration_sec": 0},
+        ]},
+    )
+    epg_resp = await hass.services.async_call(
+        DOMAIN, "get_epg",
+        {"bouquet_reference": "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"x\" ORDER BY bouquet"},
+        blocking=True, return_response=True,
+    )
+    assert epg_resp and "events" in epg_resp
+    assert len(epg_resp["events"]) == 1  # N/A filtered out
+    print("[get_epg] returned", len(epg_resp["events"]), "event(s)")
 
     # 6. Exercise a service call end-to-end
     await hass.services.async_call(

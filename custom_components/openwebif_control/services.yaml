@@ -82,3 +82,18 @@ add_timer:
 toggle_standby:
   name: Toggle standby
   description: Toggle the receiver between standby and active.
+
+get_epg:
+  name: Get EPG (timeline)
+  description: >-
+    Return the multi-day EPG for every channel in a bouquet, as response data,
+    for rendering a timeline/grid. Each event has sref, sname, title, begin
+    (unix timestamp), duration (seconds) and shortdesc.
+  fields:
+    bouquet_reference:
+      name: Bouquet reference
+      description: The bouquet service reference to fetch EPG for.
+      required: true
+      example: '1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.favourites.tv" ORDER BY bouquet'
+      selector:
+        text:

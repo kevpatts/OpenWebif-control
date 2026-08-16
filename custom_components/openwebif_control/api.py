@@ -18,6 +18,8 @@ from aiohttp import BasicAuth, ClientTimeout
 _LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = ClientTimeout(total=15)
+# EPG grid queries (epgmulti) can be large; allow more time for them.
+EPG_TIMEOUT = ClientTimeout(total=45)
 
 
 class OpenWebifError(Exception):
@@ -79,7 +81,9 @@ class OpenWebifClient:
         """Return the live stream URL for a service reference (port 8001)."""
         return f"http://{self._host}:8001/{service_reference}"
 
-    async def _get(self, path: str, **params: Any) -> dict[str, Any]:
+    async def _get(
+        self, path: str, timeout: ClientTimeout | None = None, **params: Any
+    ) -> dict[str, Any]:
         """Perform a GET against an OpenWebif API path and return parsed JSON."""
         url = f"{self._base}/{path.lstrip('/')}"
         try:
@@ -87,7 +91,7 @@ class OpenWebifClient:
                 url,
                 params=params or None,
                 auth=self._auth,
-                timeout=REQUEST_TIMEOUT,
+                timeout=timeout or REQUEST_TIMEOUT,
                 ssl=self._verify_ssl if self._base.startswith("https") else None,
             ) as resp:
                 if resp.status in (401, 403):
@@ -148,19 +152,24 @@ class OpenWebifClient:
             return False
         return True
 
-    async def get_all_channels(self) -> list[dict[str, Any]]:
-        """Return a de-duplicated list of real channels across all bouquets.
+    async def get_all_channels(self) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        """Return real channels across all bouquets, plus a name->ref map.
 
-        Each entry: {name, sref, bouquet}. The first bouquet a channel is seen
-        in is recorded as its ``bouquet`` tag (for optional UI filtering).
+        Returns a tuple ``(channels, bouquet_refs)`` where each channel is
+        ``{name, sref, bouquet}`` (first bouquet wins as its tag) and
+        ``bouquet_refs`` maps bouquet name -> bouquet service reference (used
+        by the EPG grid service).
         """
         bouquets = await self.get_bouquets()
         seen: dict[str, dict[str, Any]] = {}
+        bouquet_refs: dict[str, str] = {}
         for bouquet in bouquets:
             bref = bouquet.get("servicereference")
             bname = bouquet.get("servicename")
             if not bref:
                 continue
+            if bname:
+                bouquet_refs[bname] = bref
             try:
                 services = await self.get_services(bref)
             except OpenWebifError:
@@ -176,7 +185,7 @@ class OpenWebifClient:
                     "sref": sref,
                     "bouquet": bname,
                 }
-        return list(seen.values())
+        return list(seen.values()), bouquet_refs
 
     # --- EPG ----------------------------------------------------------------
 
@@ -193,6 +202,18 @@ class OpenWebifClient:
     async def get_epg_service(self, service_ref: str) -> list[dict[str, Any]]:
         """Return the full forward EPG for a single service (up to ~7 days)."""
         data = await self._get("api/epgservice", sRef=service_ref)
+        return data.get("events", [])
+
+    async def get_epg_multi(self, bouquet_ref: str) -> list[dict[str, Any]]:
+        """Return the multi-day EPG for every channel in a bouquet.
+
+        This is the data source for a timeline/grid view: each event carries a
+        begin timestamp and a duration, so the card can position and size it.
+        Uses a longer timeout because large bouquets return a lot of data.
+        """
+        data = await self._get(
+            "api/epgmulti", timeout=EPG_TIMEOUT, bRef=bouquet_ref
+        )
         return data.get("events", [])
 
     # --- Recordings ---------------------------------------------------------
