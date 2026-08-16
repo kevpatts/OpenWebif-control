@@ -1,0 +1,49 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to OpenWebif",
+        "description": "Enter the address of your Enigma2 receiver's OpenWebif interface.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "username": "Username (optional)",
+          "password": "Password (optional)",
+          "ssl": "Use HTTPS",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check the host, port and that OpenWebif is reachable.",
+      "invalid_auth": "Invalid username or password.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This receiver is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "OpenWebif options",
+        "data": {
+          "bouquet": "Default bouquet for EPG",
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_programme": { "name": "Current programme" },
+      "next_programme": { "name": "Next programme" },
+      "timer_count": { "name": "Timers" },
+      "recording_count": { "name": "Recordings" }
+    },
+    "binary_sensor": {
+      "recording": { "name": "Recording" },
+      "standby": { "name": "Standby" }
+    }
+  }
+}

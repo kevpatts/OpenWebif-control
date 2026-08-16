@@ -1,0 +1,84 @@
+zap:
+  name: Zap to channel
+  description: Change the receiver to a given service (channel).
+  fields:
+    service_reference:
+      name: Service reference
+      description: The Enigma2 service reference to zap to (e.g. 1:0:19:287B:800:2:11A0000:0:0:0:).
+      required: true
+      example: "1:0:19:287B:800:2:11A0000:0:0:0:"
+      selector:
+        text:
+
+send_message:
+  name: Send on-screen message
+  description: Display a message on the connected TV.
+  fields:
+    text:
+      name: Text
+      description: The message to display.
+      required: true
+      example: "Dinner is ready"
+      selector:
+        text:
+    message_type:
+      name: Type
+      description: The style of the message popup.
+      default: info
+      selector:
+        select:
+          options:
+            - yesno
+            - info
+            - message
+            - attention
+    timeout:
+      name: Timeout
+      description: Seconds to display the message (0 = until dismissed).
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: seconds
+
+remote_control:
+  name: Send remote key
+  description: Send a remote-control key code to the receiver.
+  fields:
+    command:
+      name: Command
+      description: The remote key code (e.g. 116 = power, 352 = OK, 103 = up).
+      required: true
+      example: 116
+      selector:
+        number:
+          min: 0
+          max: 999
+          mode: box
+
+add_timer:
+  name: Add recording timer
+  description: Schedule a recording from an EPG event id on a service.
+  fields:
+    service_reference:
+      name: Service reference
+      description: The service the event is on.
+      required: true
+      example: "1:0:19:287B:800:2:11A0000:0:0:0:"
+      selector:
+        text:
+    event_id:
+      name: Event id
+      description: The EPG event id to record.
+      required: true
+      example: 13267
+      selector:
+        number:
+          min: 0
+          max: 999999
+          mode: box
+
+toggle_standby:
+  name: Toggle standby
+  description: Toggle the receiver between standby and active.
