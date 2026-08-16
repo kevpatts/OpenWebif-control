@@ -71,33 +71,21 @@ class NextProgrammeSensor(OpenWebifEntity, SensorEntity):
     def __init__(self, coordinator: OpenWebifCoordinator) -> None:
         super().__init__(coordinator, "next_programme")
 
-    def _current_sref(self) -> str | None:
-        status = self.coordinator.data.get("status", {})
-        return status.get("currservice_serviceref")
-
     @property
     def native_value(self) -> str | None:
-        sref = self._current_sref()
-        epg = self.coordinator.data.get("epg", [])
-        # epgnownext returns two entries per service; the second is "next".
-        matches = [e for e in epg if e.get("sref") == sref]
-        if len(matches) >= 2:
-            return matches[1].get("title")
-        return None
+        nxt = self.coordinator.data.get("next_event")
+        return nxt.get("title") if nxt else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        sref = self._current_sref()
-        epg = self.coordinator.data.get("epg", [])
-        matches = [e for e in epg if e.get("sref") == sref]
-        if len(matches) >= 2:
-            nxt = matches[1]
-            return {
-                "description": nxt.get("shortdesc"),
-                "begin_timestamp": nxt.get("begin_timestamp"),
-                "duration_sec": nxt.get("duration_sec"),
-            }
-        return {}
+        nxt = self.coordinator.data.get("next_event")
+        if not nxt:
+            return {}
+        return {
+            "description": nxt.get("shortdesc"),
+            "begin_timestamp": nxt.get("begin_timestamp"),
+            "duration_sec": nxt.get("duration_sec"),
+        }
 
 
 class TimerCountSensor(OpenWebifEntity, SensorEntity):

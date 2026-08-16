@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -39,6 +40,14 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Channel list changes rarely; fetch once and cache across updates.
         self._channels: list[dict[str, Any]] | None = None
         self._bouquet_refs: dict[str, str] = {}
+        # Slow-changing data (recordings, timers) is refreshed on a longer
+        # cadence than status to keep box load low.
+        self._movies: list[dict[str, Any]] = []
+        self._timers: list[dict[str, Any]] = []
+        self._next_event: dict[str, Any] | None = None
+        self._slow_last = 0.0
+        self._slow_interval = 300.0  # seconds between recordings/timers refresh
+        self._last_current_sref: str | None = None
         super().__init__(
             hass,
             _LOGGER,
@@ -47,27 +56,20 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch the latest snapshot from the receiver."""
+        """Fetch the latest snapshot from the receiver.
+
+        Kept deliberately light: every poll fetches only ``statusinfo`` (small).
+        The now/next programme for the *current* channel is fetched only when
+        the channel changes (a tiny single-service EPG call, not a whole
+        bouquet). Recordings and timers refresh on a slower cadence. The full
+        channel list is fetched once. This avoids hammering the receiver with
+        large multi-hundred-KB bouquet EPG requests every interval.
+        """
         try:
             status = await self.client.get_status()
+            now = time.monotonic()
 
-            # Resolve a default bouquet on first run if the user hasn't picked one.
-            if self._bouquet is None:
-                bouquets = await self.client.get_bouquets()
-                if bouquets:
-                    self._bouquet = bouquets[0]["servicereference"]
-
-            epg: list[dict[str, Any]] = []
-            if self._bouquet:
-                try:
-                    epg = await self.client.get_epg_now_next(self._bouquet)
-                except OpenWebifError as err:
-                    _LOGGER.debug("EPG fetch failed: %s", err)
-
-            timers = await self.client.get_timers()
-            movies = await self.client.get_movies()
-
-            # Populate the channel list once (first successful update).
+            # Channel list + bouquet refs: fetch once.
             if self._channels is None:
                 try:
                     self._channels, self._bouquet_refs = (
@@ -77,17 +79,49 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     _LOGGER.debug("Channel list fetch failed: %s", err)
                     self._channels = []
 
+            # Next-programme: only refetch when the tuned channel changes, and
+            # only for that single service (cheap).
+            current_sref = status.get("currservice_serviceref")
+            if current_sref and current_sref != self._last_current_sref:
+                self._last_current_sref = current_sref
+                try:
+                    events = await self.client.get_epg_service(current_sref)
+                    # The first future event after now is "next".
+                    nowts = int(time.time())
+                    upcoming = [
+                        e for e in events
+                        if (e.get("begin_timestamp") or 0) > nowts
+                    ]
+                    self._next_event = upcoming[0] if upcoming else None
+                except OpenWebifError as err:
+                    _LOGGER.debug("Next-EPG fetch failed: %s", err)
+                    self._next_event = None
+
+            # Recordings + timers: refresh on the slow cadence (or first run).
+            if now - self._slow_last >= self._slow_interval or not self._slow_last:
+                try:
+                    self._timers = await self.client.get_timers()
+                    self._movies = await self.client.get_movies()
+                    self._slow_last = now
+                except OpenWebifError as err:
+                    _LOGGER.debug("Slow-data fetch failed: %s", err)
+
             return {
                 "status": status,
-                "epg": epg,
-                "timers": timers,
-                "movies": movies,
+                "next_event": self._next_event,
+                "timers": self._timers,
+                "movies": self._movies,
                 "channels": self._channels or [],
                 "bouquet_refs": self._bouquet_refs,
                 "bouquet": self._bouquet,
             }
         except OpenWebifError as err:
             raise UpdateFailed(str(err)) from err
+
+    async def async_refresh_slow(self) -> None:
+        """Force recordings/timers to refresh on the next update."""
+        self._slow_last = 0.0
+        await self.async_request_refresh()
 
     @property
     def now_event(self) -> dict[str, Any] | None:

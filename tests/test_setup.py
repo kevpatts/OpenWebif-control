@@ -43,6 +43,15 @@ def _register_mocks(aioclient_mock):
     # EPG now/next and any zap/message/etc. — match by URL prefix via params
     aioclient_mock.get(f"{BASE}/api/epgnownext", json=_fix("epgnownext.json"))
     aioclient_mock.get(f"{BASE}/api/epgnow", json=_fix("epgnownext.json"))
+    # Single-service EPG for the next-programme sensor (channel-change fetch).
+    import time as _t
+    aioclient_mock.get(
+        f"{BASE}/api/epgservice",
+        json={"events": [
+            {"title": "Upcoming Show", "begin_timestamp": int(_t.time()) + 3600,
+             "duration_sec": 1800, "shortdesc": "Later."},
+        ]},
+    )
     aioclient_mock.get(f"{BASE}/api/zap", json={"result": True})
     aioclient_mock.get(f"{BASE}/api/message", json={"result": True})
     aioclient_mock.get(f"{BASE}/api/remotecontrol", json={"result": True})

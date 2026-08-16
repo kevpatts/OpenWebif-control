@@ -146,16 +146,25 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         DOMAIN, SERVICE_TOGGLE_STANDBY, _toggle_standby, schema=vol.Schema({})
     )
 
+    # Small server-side cache so repeated grid loads within a short window do
+    # not re-hit the receiver. Keyed by bouquet reference.
+    _epg_cache: dict[str, tuple[float, list[dict]]] = {}
+    _EPG_CACHE_TTL = 120.0  # seconds
+
     async def _get_epg(call: ServiceCall) -> ServiceResponse:
         import time
 
         coord = _first_coordinator(hass)
-        try:
-            events = await coord.client.get_epg_multi(
-                call.data[ATTR_BOUQUET_REFERENCE]
-            )
-        except OpenWebifError as err:
-            raise HomeAssistantError(f"Get EPG failed: {err}") from err
+        bref = call.data[ATTR_BOUQUET_REFERENCE]
+        cached = _epg_cache.get(bref)
+        if cached and time.time() - cached[0] < _EPG_CACHE_TTL:
+            events = cached[1]
+        else:
+            try:
+                events = await coord.client.get_epg_multi(bref)
+            except OpenWebifError as err:
+                raise HomeAssistantError(f"Get EPG failed: {err}") from err
+            _epg_cache[bref] = (time.time(), events)
         # Window the EPG: keep events overlapping [now, now + hours] so the
         # grid stays lightweight even for large 7-day bouquets.
         now = int(time.time())
