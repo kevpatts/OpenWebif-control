@@ -1,0 +1,20 @@
+{
+ "volume": 100,
+ "muted": false,
+ "transcoding": true,
+ "currservice_filename": "",
+ "currservice_id": 13268,
+ "currservice_name": "Sample Programme",
+ "currservice_serviceref": "1:0:19:287B:800:2:11A0000:0:0:0:",
+ "currservice_begin": "22:35",
+ "currservice_begin_timestamp": 1786916100,
+ "currservice_end": "22:40",
+ "currservice_end_timestamp": 1786916400,
+ "currservice_description": "Sample now-playing description.",
+ "currservice_station": "BBC One HD",
+ "currservice_fulldescription": "Sample now-playing description.",
+ "inStandby": "false",
+ "isRecording": "false",
+ "Streaming_list": "",
+ "isStreaming": "false"
+}

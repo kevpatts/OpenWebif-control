@@ -1,0 +1,129 @@
+{
+ "info": {
+  "brand": "Vu+",
+  "model": "Duo\u00b2",
+  "boxtype": "vuduo2",
+  "machinebuild": "vuduo2",
+  "lcd": 1,
+  "grabpip": 0,
+  "chipset": "7424",
+  "mem1": "1239844 kB",
+  "mem2": "596252 kB",
+  "mem3": "596252 kB free / 1239844 kB total",
+  "uptime": "43d 09:09",
+  "webifver": "OWIF 2.2.2",
+  "imagedistro": "openvix",
+  "friendlyimagedistro": "OpenViX",
+  "oever": "OE-Alliance 5.6",
+  "imagever": "6.8.003",
+  "enigmaver": "2026-01-19-Release",
+  "driverdate": "20190429",
+  "kernelver": "3.13.5",
+  "fp_version": 0,
+  "friendlychipsetdescription": "Chipset",
+  "friendlychipsettext": "Broadcom 7424",
+  "tuners": [
+   {
+    "name": "Tuner A",
+    "type": "Vuplus DVB-S NIM(AVL6222) (DVB-S2)",
+    "rec": "",
+    "live": "28.2\u00b0 E / BBC One Lon HD",
+    "stream": ""
+   },
+   {
+    "name": "Tuner B",
+    "type": "Vuplus DVB-S NIM(AVL6222) (DVB-S2)",
+    "rec": "",
+    "live": "",
+    "stream": ""
+   },
+   {
+    "name": "Tuner C",
+    "type": "Vuplus DVB-C NIM(TT3L10) (MultiType DVB-C/T2)",
+    "rec": "",
+    "live": "",
+    "stream": ""
+   },
+   {
+    "name": "Tuner D",
+    "type": "Vuplus DVB-C NIM(TT3L10) (MultiType DVB-C/T2)",
+    "rec": "",
+    "live": "",
+    "stream": ""
+   },
+   {
+    "name": "Tuner E",
+    "type": "DVB-T TV Stick (DVB-T)",
+    "rec": "",
+    "live": "",
+    "stream": ""
+   },
+   {
+    "name": "Tuner F",
+    "type": "DVB-T TV Stick (DVB-T)",
+    "rec": "",
+    "live": "",
+    "stream": ""
+   }
+  ],
+  "ifaces": [
+   {
+    "name": "eth0",
+    "friendlynic": "Broadcom Gigabit Ethernet",
+    "linkspeed": "1 GBit/s",
+    "mac": "00:11:22:33:44:55",
+    "dhcp": true,
+    "ipv4method": "DHCP",
+    "ip": "192.168.1.50",
+    "mask": "255.255.255.0",
+    "v4prefix": 24,
+    "gw": "192.168.1.1",
+    "ipv6": "none/IPv4-only network",
+    "ipmethod": "DHCP",
+    "firstpublic": null
+   }
+  ],
+  "hdd": [],
+  "shares": [
+   {
+    "name": "nas",
+    "method": "autofs",
+    "type": "NFS",
+    "mode": "r/w",
+    "path": "192.168.1.10:/sample",
+    "host": "192.168.1.10:/sample",
+    "ipaddress": null,
+    "friendlyaddress": "192.168.1.10"
+   }
+  ],
+  "transcoding": true,
+  "EX": "",
+  "streams": [],
+  "timerpipzap": true,
+  "allow_duplicate": false,
+  "timermargins": false,
+  "textinputsupport": false
+ },
+ "service": {
+  "result": true,
+  "name": "BBC One Lon HD",
+  "namespace": 18481152,
+  "aspect": 3,
+  "provider": "BSkyB",
+  "width": 1920,
+  "height": 1080,
+  "apid": 5001,
+  "vpid": 5000,
+  "pcrpid": 5000,
+  "pmtpid": 260,
+  "txtpid": 5003,
+  "tsid": 2048,
+  "onid": 2,
+  "sid": 10363,
+  "ref": "1:0:19:287B:800:2:11A0000:0:0:0:",
+  "iswidescreen": true,
+  "bqref": "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET %22userbouquet.abm.sat_282_freesat.main.tv%22 ORDER BY bouquet",
+  "bqname": "FreeSat UK - All channels",
+  "hbbtvurl": ""
+ }
+}

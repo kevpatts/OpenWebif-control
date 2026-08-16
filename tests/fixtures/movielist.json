@@ -1,0 +1,37 @@
+{
+ "movies": [
+  {
+   "eventname": "Sample Programme One",
+   "servicename": "BBC One HD",
+   "length": "58:00",
+   "begintime": "Mon 01.01., 20:00",
+   "filesize_readable": "2.10 GB",
+   "description": "A sample recording used for tests.",
+   "serviceref": "1:0:0:0:0:0:0:0:0:0:/media/hdd/movie/sample-one.ts",
+   "filename": "/media/hdd/movie/sample-one.ts"
+  },
+  {
+   "eventname": "Sample Programme Two",
+   "servicename": "ITV1 HD",
+   "length": "44:00",
+   "begintime": "Tue 02.01., 21:00",
+   "filesize_readable": "1.30 GB",
+   "description": "Another sample recording.",
+   "serviceref": "1:0:0:0:0:0:0:0:0:0:/media/hdd/movie/sample-two.ts",
+   "filename": "/media/hdd/movie/sample-two.ts"
+  },
+  {
+   "eventname": "Sample News",
+   "servicename": "Channel 4 HD",
+   "length": "30:00",
+   "begintime": "Wed 03.01., 19:00",
+   "filesize_readable": "850 MB",
+   "description": "Sample news recording.",
+   "serviceref": "1:0:0:0:0:0:0:0:0:0:/media/hdd/movie/sample-news.ts",
+   "filename": "/media/hdd/movie/sample-news.ts"
+  }
+ ],
+ "bookmarks": [],
+ "directory": "/media/hdd/movie/",
+ "recursive": false
+}

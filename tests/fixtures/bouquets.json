@@ -1,0 +1,72 @@
+{
+ "bouquets": [
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.main.tv\" ORDER BY bouquet",
+   "FreeSat UK - All channels"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.101.tv\" ORDER BY bouquet",
+   "FreeSat UK - Entertainment"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.200.tv\" ORDER BY bouquet",
+   "FreeSat UK - News and Sport"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.300.tv\" ORDER BY bouquet",
+   "FreeSat UK - Movies"
+  ],
+  [
+   "1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.500.tv\" ORDER BY bouquet",
+   "FreeSat UK - Music"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.600.tv\" ORDER BY bouquet",
+   "FreeSat UK - Children"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.650.tv\" ORDER BY bouquet",
+   "FreeSat UK - Special Interest"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.700.tv\" ORDER BY bouquet",
+   "FreeSat UK - Radio"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.800.tv\" ORDER BY bouquet",
+   "FreeSat UK - Shopping"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.949.tv\" ORDER BY bouquet",
+   "FreeSat UK - Regional"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.970.tv\" ORDER BY bouquet",
+   "FreeSat UK - BBC Red Button"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.999.tv\" ORDER BY bouquet",
+   "FreeSat UK - Freesat Info"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.sat_282_freesat.hd.tv\" ORDER BY bouquet",
+   "FreeSat UK - HD Channels"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.terrestrial_ie_saorview_PSB1.main.tv\" ORDER BY bouquet",
+   "Saorview - All channels"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.abm.terrestrial_ie_saorview_PSB1.hd.tv\" ORDER BY bouquet",
+   "Saorview - HD Channels"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.favourites.tv\" ORDER BY bouquet",
+   "Favourites (TV)"
+  ],
+  [
+   "1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"userbouquet.LastScanned.tv\" ORDER BY bouquet",
+   "Last Scanned"
+  ]
+ ]
+}
