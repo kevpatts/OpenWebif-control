@@ -269,3 +269,28 @@ class OpenWebifClient:
     async def toggle_standby(self) -> dict[str, Any]:
         """Toggle standby (newstate=0)."""
         return await self.set_powerstate(0)
+
+    async def play_recording(
+        self, service_ref: str, position_percent: int | None = None
+    ) -> dict[str, Any]:
+        """Start playing a recording, optionally jumping to a rough position.
+
+        Playback is started by zapping to the recording's service reference.
+        Because this box has no MediaPlayer plugin, seeking uses the Enigma2
+        movie-player numeric keys, which jump to deciles (10%..100%). We map
+        the requested percentage to the nearest decile key.
+        """
+        from .const import NUMERIC_KEY_CODES
+
+        result = await self.zap(service_ref)
+        if position_percent:
+            # Give the player a moment to start before seeking.
+            import asyncio
+
+            await asyncio.sleep(1.5)
+            decile = max(1, min(10, round(position_percent / 10)))
+            digit = 0 if decile == 10 else decile
+            code = NUMERIC_KEY_CODES.get(digit)
+            if code is not None:
+                await self.remote_control(code)
+        return result

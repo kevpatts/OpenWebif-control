@@ -132,9 +132,9 @@ async def test_full_setup(hass: HomeAssistant, aioclient_mock):
 
     # 5. Services registered
     for svc in ("zap", "send_message", "remote_control", "add_timer",
-                "toggle_standby", "get_epg"):
+                "toggle_standby", "get_epg", "play_recording"):
         assert hass.services.has_service(DOMAIN, svc), f"missing {svc}"
-    print("[services] all 6 registered")
+    print("[services] all 7 registered")
 
     # get_epg returns response data from epgmulti (use a now-relative time so
     # the service's time-window keeps the real event and drops the N/A one).

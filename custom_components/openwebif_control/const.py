@@ -36,8 +36,16 @@ SERVICE_REMOTE_CONTROL = "remote_control"
 SERVICE_ADD_TIMER = "add_timer"
 SERVICE_TOGGLE_STANDBY = "toggle_standby"
 SERVICE_GET_EPG = "get_epg"
+SERVICE_PLAY_RECORDING = "play_recording"
 
 ATTR_BOUQUET_REFERENCE = "bouquet_reference"
+ATTR_POSITION_PERCENT = "position_percent"
+
+# Enigma2 remote key codes for numeric keys (movie playback jumps by decile).
+# KEY_1..KEY_9 = codes 2..10, KEY_0 = 11.
+NUMERIC_KEY_CODES = {
+    1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 0: 11,
+}
 
 ATTR_SERVICE_REFERENCE = "service_reference"
 ATTR_TEXT = "text"

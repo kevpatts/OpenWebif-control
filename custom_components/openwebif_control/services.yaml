@@ -83,6 +83,29 @@ toggle_standby:
   name: Toggle standby
   description: Toggle the receiver between standby and active.
 
+play_recording:
+  name: Play recording
+  description: >-
+    Start playing a recording on the TV, optionally jumping to a rough position
+    (percentage). Seeking uses the Enigma2 movie-player numeric keys, which
+    jump to deciles, so the position is approximate.
+  fields:
+    service_reference:
+      name: Service reference
+      description: The recording's service reference (from the recordings list).
+      required: true
+      selector:
+        text:
+    position_percent:
+      name: Position (%)
+      description: Approximate start position as a percentage (0-100).
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
 get_epg:
   name: Get EPG (timeline)
   description: >-

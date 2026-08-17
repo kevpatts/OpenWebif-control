@@ -21,6 +21,7 @@ from .const import (
     ATTR_COMMAND,
     ATTR_EVENT_ID,
     ATTR_MESSAGE_TYPE,
+    ATTR_POSITION_PERCENT,
     ATTR_SERVICE_REFERENCE,
     ATTR_TEXT,
     ATTR_TIMEOUT,
@@ -28,6 +29,7 @@ from .const import (
     MESSAGE_TYPE_MAP,
     SERVICE_ADD_TIMER,
     SERVICE_GET_EPG,
+    SERVICE_PLAY_RECORDING,
     SERVICE_REMOTE_CONTROL,
     SERVICE_SEND_MESSAGE,
     SERVICE_TOGGLE_STANDBY,
@@ -72,6 +74,15 @@ GET_EPG_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_BOUQUET_REFERENCE): cv.string,
         vol.Optional("hours", default=24): vol.All(int, vol.Range(min=1, max=168)),
+    }
+)
+
+PLAY_RECORDING_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_SERVICE_REFERENCE): cv.string,
+        vol.Optional(ATTR_POSITION_PERCENT): vol.All(
+            int, vol.Range(min=0, max=100)
+        ),
     }
 )
 
@@ -199,6 +210,24 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.ONLY,
     )
 
+    async def _play_recording(call: ServiceCall) -> None:
+        coord = _first_coordinator(hass)
+        try:
+            await coord.client.play_recording(
+                call.data[ATTR_SERVICE_REFERENCE],
+                call.data.get(ATTR_POSITION_PERCENT),
+            )
+        except OpenWebifError as err:
+            raise HomeAssistantError(f"Play recording failed: {err}") from err
+        await coord.async_request_refresh()
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_PLAY_RECORDING,
+        _play_recording,
+        schema=PLAY_RECORDING_SCHEMA,
+    )
+
 
 async def async_unload_services(hass: HomeAssistant) -> None:
     """Unregister integration services."""
@@ -209,5 +238,6 @@ async def async_unload_services(hass: HomeAssistant) -> None:
         SERVICE_ADD_TIMER,
         SERVICE_TOGGLE_STANDBY,
         SERVICE_GET_EPG,
+        SERVICE_PLAY_RECORDING,
     ):
         hass.services.async_remove(DOMAIN, service)
