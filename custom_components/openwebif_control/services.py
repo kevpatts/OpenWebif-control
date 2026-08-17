@@ -157,49 +157,18 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         DOMAIN, SERVICE_TOGGLE_STANDBY, _toggle_standby, schema=vol.Schema({})
     )
 
-    # Small server-side cache so repeated grid loads within a short window do
-    # not re-hit the receiver. Keyed by bouquet reference.
-    _epg_cache: dict[str, tuple[float, list[dict]]] = {}
-    _EPG_CACHE_TTL = 120.0  # seconds
-
     async def _get_epg(call: ServiceCall) -> ServiceResponse:
-        import time
-
+        # EPG is served from the coordinator's background-refreshed cache, so
+        # repeated grid loads don't hit the receiver; only the first request
+        # for a given bouquet triggers a fetch.
         coord = _first_coordinator(hass)
-        bref = call.data[ATTR_BOUQUET_REFERENCE]
-        cached = _epg_cache.get(bref)
-        if cached and time.time() - cached[0] < _EPG_CACHE_TTL:
-            events = cached[1]
-        else:
-            try:
-                events = await coord.client.get_epg_multi(bref)
-            except OpenWebifError as err:
-                raise HomeAssistantError(f"Get EPG failed: {err}") from err
-            _epg_cache[bref] = (time.time(), events)
-        # Window the EPG: keep events overlapping [now, now + hours] so the
-        # grid stays lightweight even for large 7-day bouquets.
-        now = int(time.time())
-        horizon = now + call.data.get("hours", 24) * 3600
-        trimmed = []
-        for e in events:
-            if e.get("title") in (None, "", "N/A"):
-                continue
-            begin = e.get("begin_timestamp") or 0
-            dur = e.get("duration_sec") or 0
-            end = begin + dur
-            if end < now or begin > horizon:
-                continue
-            trimmed.append(
-                {
-                    "sref": e.get("sref"),
-                    "sname": e.get("sname"),
-                    "title": e.get("title"),
-                    "begin": begin,
-                    "duration": dur,
-                    "shortdesc": e.get("shortdesc"),
-                    "id": e.get("id"),
-                }
+        try:
+            trimmed = await coord.async_get_epg(
+                call.data[ATTR_BOUQUET_REFERENCE],
+                call.data.get("hours"),
             )
+        except OpenWebifError as err:
+            raise HomeAssistantError(f"Get EPG failed: {err}") from err
         return {"events": trimmed}
 
     hass.services.async_register(

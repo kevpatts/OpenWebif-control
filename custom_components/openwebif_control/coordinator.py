@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import timedelta
@@ -9,6 +10,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import OpenWebifClient, OpenWebifError
@@ -48,6 +50,12 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._slow_last = 0.0
         self._slow_interval = 300.0  # seconds between recordings/timers refresh
         self._last_current_sref: str | None = None
+        # Background EPG cache: raw epgmulti events per bouquet reference, kept
+        # fresh so the card reads instantly without hitting the box per action.
+        self._epg_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+        self.epg_horizon_hours = 5  # how far ahead the grid data spans
+        self._epg_refresh_interval = timedelta(minutes=10)
+        self._epg_unsub = None
         super().__init__(
             hass,
             _LOGGER,
@@ -122,6 +130,78 @@ class OpenWebifCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Force recordings/timers to refresh on the next update."""
         self._slow_last = 0.0
         await self.async_request_refresh()
+
+    # ---- Background EPG cache ----------------------------------------------
+
+    def start_epg_refresh(self) -> None:
+        """Begin the periodic background refresh of cached bouquets."""
+        if self._epg_unsub is None:
+            self._epg_unsub = async_track_time_interval(
+                self.hass, self._async_refresh_epg_cache, self._epg_refresh_interval
+            )
+
+    def stop_epg_refresh(self) -> None:
+        """Stop the periodic EPG refresh."""
+        if self._epg_unsub is not None:
+            self._epg_unsub()
+            self._epg_unsub = None
+
+    async def _async_refresh_epg_cache(self, _now=None) -> None:
+        """Refresh every bouquet already in the cache (the ones actually used).
+
+        Only bouquets the user has opened get refreshed, so the box is touched
+        just for what's in use, once per interval.
+        """
+        for bref in list(self._epg_cache):
+            try:
+                events = await self.client.get_epg_multi(bref)
+                self._epg_cache[bref] = (time.time(), events)
+            except OpenWebifError as err:
+                _LOGGER.debug("Background EPG refresh failed for %s: %s", bref, err)
+            # Be gentle: small gap between bouquets.
+            await asyncio.sleep(1.0)
+
+    async def async_get_epg(
+        self, bouquet_ref: str, hours: int | None = None
+    ) -> list[dict[str, Any]]:
+        """Return windowed EPG for a bouquet, fetching + caching on first use.
+
+        Subsequent reads are served from the background-refreshed cache, so the
+        card is instant and the box is not hit per interaction.
+        """
+        cached = self._epg_cache.get(bouquet_ref)
+        # Serve from cache unless we've never fetched this bouquet. Freshness is
+        # maintained by the 10-minute background refresh; a stale-but-present
+        # entry is still returned immediately (and will refresh in the bg).
+        if cached is None:
+            events = await self.client.get_epg_multi(bouquet_ref)
+            self._epg_cache[bouquet_ref] = (time.time(), events)
+        else:
+            events = cached[1]
+
+        horizon_hours = hours or self.epg_horizon_hours
+        now = int(time.time())
+        horizon = now + horizon_hours * 3600
+        trimmed: list[dict[str, Any]] = []
+        for e in events:
+            if e.get("title") in (None, "", "N/A"):
+                continue
+            begin = e.get("begin_timestamp") or 0
+            dur = e.get("duration_sec") or 0
+            if begin + dur < now or begin > horizon:
+                continue
+            trimmed.append(
+                {
+                    "sref": e.get("sref"),
+                    "sname": e.get("sname"),
+                    "title": e.get("title"),
+                    "begin": begin,
+                    "duration": dur,
+                    "shortdesc": e.get("shortdesc"),
+                    "id": e.get("id"),
+                }
+            )
+        return trimmed
 
     @property
     def now_event(self) -> dict[str, Any] | None:
