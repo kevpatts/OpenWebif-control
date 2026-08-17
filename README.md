@@ -33,6 +33,14 @@ control services — the data layer for a richer, "Sky Q-style" TV dashboard.
 | `sensor.*_next_programme` | What's on next on the current channel |
 | `sensor.*_timers` | Number of scheduled timers (full list in attributes) |
 | `sensor.*_recordings` | Number of recordings on the box's storage (list with name/channel/size/description in attributes) |
+| `sensor.*_channels` | Real channels across your bouquets (list in attributes), each tagged with a **category** bouquet for the dashboard's tabs |
+
+> **Channel grouping.** Channels are tagged with the first *category* bouquet
+> they appear in (Entertainment, Movies, News, etc.). The giant
+> `… - All channels` / `Last Scanned` buckets are deliberately **not** used as
+> tags: a 1000-channel grid is unusable and its EPG payload is enormous (tens
+> of thousands of events), which would freeze the dashboard. Their refs are
+> still exposed, just never used to group channels.
 
 **Binary sensors**
 

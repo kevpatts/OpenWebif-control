@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Any
 from urllib.parse import quote
 
@@ -152,27 +153,65 @@ class OpenWebifClient:
             return False
         return True
 
+    # Bouquet names that are "mega" / non-category buckets. We keep their refs
+    # (so they remain selectable) but never TAG channels with them, because a
+    # single 1000-channel bouquet is unusable as an EPG grid and its epgmulti
+    # payload (tens of thousands of events, many MB) freezes the dashboard.
+    _MEGA_BOUQUET_RE = re.compile(r"all channels|last scanned", re.IGNORECASE)
+
+    @classmethod
+    def _is_mega_bouquet(cls, name: str | None) -> bool:
+        return bool(name and cls._MEGA_BOUQUET_RE.search(name))
+
     async def get_all_channels(self) -> tuple[list[dict[str, Any]], dict[str, str]]:
         """Return real channels across all bouquets, plus a name->ref map.
 
         Returns a tuple ``(channels, bouquet_refs)`` where each channel is
-        ``{name, sref, bouquet}`` (first bouquet wins as its tag) and
-        ``bouquet_refs`` maps bouquet name -> bouquet service reference (used
-        by the EPG grid service).
+        ``{name, sref, bouquet}`` and ``bouquet_refs`` maps bouquet name ->
+        bouquet service reference (used by the EPG grid service).
+
+        Channels are tagged with the first **category** bouquet they appear in.
+        The big ``... - All channels`` / ``Last Scanned`` buckets are skipped
+        for tagging (a 1000-channel grid is unusable and its EPG payload is
+        huge), though their refs are still returned so they remain available.
+        Any channel that somehow appears only in a mega bouquet is tagged with
+        it as a last resort, so nothing is dropped.
         """
         bouquets = await self.get_bouquets()
-        seen: dict[str, dict[str, Any]] = {}
+        # Collect all services per bouquet once, and every bouquet ref.
         bouquet_refs: dict[str, str] = {}
+        services_by_bouquet: list[tuple[str, list[dict[str, Any]]]] = []
         for bouquet in bouquets:
             bref = bouquet.get("servicereference")
             bname = bouquet.get("servicename")
-            if not bref:
+            if not bref or not bname:
                 continue
-            if bname:
-                bouquet_refs[bname] = bref
+            bouquet_refs[bname] = bref
             try:
                 services = await self.get_services(bref)
             except OpenWebifError:
+                continue
+            services_by_bouquet.append((bname, services))
+
+        seen: dict[str, dict[str, Any]] = {}
+        # Pass 1: tag from category (non-mega) bouquets, first one wins.
+        for bname, services in services_by_bouquet:
+            if self._is_mega_bouquet(bname):
+                continue
+            for svc in services:
+                if not self._is_real_channel(svc):
+                    continue
+                sref = svc["servicereference"]
+                if sref in seen:
+                    continue
+                seen[sref] = {
+                    "name": svc["servicename"],
+                    "sref": sref,
+                    "bouquet": bname,
+                }
+        # Pass 2: rescue any channel that only lives in a mega bouquet.
+        for bname, services in services_by_bouquet:
+            if not self._is_mega_bouquet(bname):
                 continue
             for svc in services:
                 if not self._is_real_channel(svc):
