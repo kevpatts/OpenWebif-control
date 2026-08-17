@@ -282,12 +282,19 @@ class OpenWebifClient:
         """
         from .const import NUMERIC_KEY_CODES
 
-        result = await self.zap(service_ref)
-        if position_percent:
-            # Give the player a moment to start before seeking.
-            import asyncio
+        import asyncio
 
-            await asyncio.sleep(1.5)
+        result = await self.zap(service_ref)
+        # The receiver may show a "Resume from last position?" dialog on movie
+        # start. Dismiss it with OK so playback proceeds; if we're seeking to a
+        # specific position next, the resume point is overridden anyway.
+        await asyncio.sleep(1.0)
+        try:
+            await self.remote_control(352)  # KEY_OK
+        except OpenWebifError:
+            pass
+        if position_percent:
+            await asyncio.sleep(1.0)
             decile = max(1, min(10, round(position_percent / 10)))
             digit = 0 if decile == 10 else decile
             code = NUMERIC_KEY_CODES.get(digit)
