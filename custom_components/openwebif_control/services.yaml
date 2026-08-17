@@ -88,7 +88,9 @@ play_recording:
   description: >-
     Start playing a recording on the TV, optionally jumping to a rough position
     (percentage). Seeking uses the Enigma2 movie-player numeric keys, which
-    jump to deciles, so the position is approximate.
+    jump to deciles, so the position is approximate. Requires the receiver's
+    interactive resume prompt to be DISABLED (see the integration README);
+    otherwise a "Resume from last position?" dialog can block playback.
   fields:
     service_reference:
       name: Service reference

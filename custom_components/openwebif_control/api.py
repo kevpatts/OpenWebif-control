@@ -279,21 +279,21 @@ class OpenWebifClient:
         Because this box has no MediaPlayer plugin, seeking uses the Enigma2
         movie-player numeric keys, which jump to deciles (10%..100%). We map
         the requested percentage to the nearest decile key.
+
+        NOTE: This assumes the receiver's "Ask user" resume behaviour is
+        DISABLED (Menu > Setup > System > Recordings/Playback >
+        "Behavior when a movie reaches the end" / resume prompt set to
+        "Do nothing"/"Play from beginning", i.e. no interactive dialog). See
+        the README for how to disable it. With the prompt disabled, playback
+        starts immediately and we can seek without first dismissing a modal.
         """
         from .const import NUMERIC_KEY_CODES
 
         import asyncio
 
         result = await self.zap(service_ref)
-        # The receiver may show a "Resume from last position?" dialog on movie
-        # start. Dismiss it with OK so playback proceeds; if we're seeking to a
-        # specific position next, the resume point is overridden anyway.
-        await asyncio.sleep(1.0)
-        try:
-            await self.remote_control(352)  # KEY_OK
-        except OpenWebifError:
-            pass
         if position_percent:
+            # Give the movie player a moment to open before the seek key.
             await asyncio.sleep(1.0)
             decile = max(1, min(10, round(position_percent / 10)))
             digit = 0 if decile == 10 else decile

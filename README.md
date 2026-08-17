@@ -17,8 +17,9 @@ zapping). OpenWebif Control adds the pieces the core integration doesn't:
 current/next programme sensors, recording & timer state, a recordings list, and
 control services — the data layer for a richer, "Sky Q-style" TV dashboard.
 
-> **Status: v0.1 (data + control layer).** A polished Lovelace dashboard /
-> custom EPG-grid card is planned for a later release. See [Roadmap](#roadmap).
+> **Status: v0.5.x (data + control layer, with background EPG cache).** The
+> companion Sky Q-style dashboard card is available:
+> [OpenWebif Control Card](https://github.com/kevpatts/OpenWebif-control-card).
 
 ---
 
@@ -49,6 +50,49 @@ control services — the data layer for a richer, "Sky Q-style" TV dashboard.
 | `openwebif_control.remote_control` | Send a remote-control key code |
 | `openwebif_control.add_timer` | Schedule a recording from an EPG event id |
 | `openwebif_control.toggle_standby` | Toggle standby on/off |
+| `openwebif_control.get_epg` | Return a timeline EPG window for a bouquet (cached, windowed server-side) |
+| `openwebif_control.play_recording` | Start playing a recording on the TV, optionally seeking to an approximate position |
+
+---
+
+## Receiver setup: disable the resume prompt
+
+> **Required for `play_recording` to work reliably.** Do this once on the box.
+
+When a movie/recording starts, Enigma2 can display an interactive
+**“Resume from last position?”** dialog. That modal **blocks automated
+playback and seeking** — the `play_recording` service (and the companion
+card's ▶ Play / timeline scrubber) can't get past it. This integration
+therefore **assumes the resume prompt is disabled** and does **not** try to
+dismiss it; disable it once and playback starts cleanly every time.
+
+**On the receiver (via its own on-screen menu / remote):**
+
+1. **Menu → Setup → System → Recordings** (some images: **A/V settings** or
+   **Recording paths / Playback**).
+2. Find the movie **resume** behaviour option. Wording varies by image:
+   - OpenViX / OpenATV: **“Ask about resuming a movie”** → set to **`no`**
+     (equivalent settings key `config.usage.on_movie_start`).
+   - Some images phrase it as **“Resume from last position” / “Behaviour when
+     a movie is started”** → choose **“beginning”** or **“Do nothing”** rather
+     than **“Ask user”**.
+3. Save/exit. No reboot needed.
+
+**Alternatively, over SSH (root):** the same setting is stored in
+`/etc/enigma2/settings` as `config.usage.on_movie_start`. Set it to a
+non-interactive value and restart Enigma2:
+
+```sh
+# Play recordings from the beginning, no prompt:
+grep -q '^config.usage.on_movie_start=' /etc/enigma2/settings \
+  && sed -i 's/^config.usage.on_movie_start=.*/config.usage.on_movie_start=beginning/' /etc/enigma2/settings \
+  || echo 'config.usage.on_movie_start=beginning' >> /etc/enigma2/settings
+init 4 && sleep 3 && init 3   # restart Enigma2 (or reboot)
+```
+
+> Valid `on_movie_start` values are typically `ask` (the prompt — avoid),
+> `beginning`, `resume`, or `last`. Use `beginning` (always from start) or
+> `resume` (auto-resume, no prompt) — anything except `ask`.
 
 ---
 
@@ -111,8 +155,11 @@ OpenTV harvester run (most images do this on a schedule) repopulates a full
 
 ## Roadmap
 
-- **v0.2** — Lovelace dashboard: channel-tile zapper, recordings gallery, and a
-  Sky Q-style EPG grid; optional bundled custom card.
+- ✅ **Done** — Sky Q-style EPG grid dashboard card
+  ([OpenWebif Control Card](https://github.com/kevpatts/OpenWebif-control-card)):
+  timeline guide, recordings gallery, favourites, header controls.
+- ✅ **Done** — background EPG cache (fetches a bouquet once, refreshes in-use
+  bouquets on a schedule, serves the card instantly).
 - **v0.x** — picon pack fetch helper; media_source for streaming recordings;
   per-bouquet EPG sensors.
 
